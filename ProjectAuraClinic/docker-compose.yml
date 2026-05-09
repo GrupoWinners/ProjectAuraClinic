@@ -1,0 +1,101 @@
+services:
+  # ===== BANCOS =====
+  admin-db:
+    image: mysql:8.0
+    container_name: admin-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: admin_db
+    ports: [ "3306:3306" ]
+    volumes: [ admin_data:/var/lib/mysql ]
+    networks: [ clinica-network ]
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  agendamento-db:
+    image: mysql:8.0
+    container_name: agendamento-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: agendamento_db
+    ports: [ "3307:3306" ]
+    volumes: [ agendamento_data:/var/lib/mysql ]
+    networks: [ clinica-network ]
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  atendimento-db:
+    image: mysql:8.0
+    container_name: atendimento-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: atendimento_db
+    ports: [ "3308:3306" ]
+    volumes: [ atendimento_data:/var/lib/mysql ]
+    networks: [ clinica-network ]
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== MICROSSERVIÇOS =====
+  admin-service:
+    build: ./admin-service
+    container_name: admin-service
+    ports: [ "8081:8081" ]
+    environment:
+      DB_HOST: admin-db
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+    depends_on:
+      admin-db: { condition: service_healthy }
+    networks: [ clinica-network ]
+
+  agendamento-service:
+    build: ./agendamento-service
+    container_name: agendamento-service
+    ports: [ "8082:8082" ]
+    environment:
+      DB_HOST: agendamento-db
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      ADMIN_SERVICE_URL: http://admin-service:8081
+    depends_on:
+      agendamento-db: { condition: service_healthy }
+      admin-service: { condition: service_started }
+    networks: [ clinica-network ]
+
+  atendimento-service:
+    build: ./atendimento-service
+    container_name: atendimento-service
+    ports: [ "8083:8083" ]
+    environment:
+      DB_HOST: atendimento-db
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      ADMIN_SERVICE_URL: http://admin-service:8081
+      AGENDAMENTO_SERVICE_URL: http://agendamento-service:8082
+    depends_on:
+      atendimento-db: { condition: service_healthy }
+      admin-service: { condition: service_started }
+      agendamento-service: { condition: service_started }
+    networks: [ clinica-network ]
+
+volumes:
+  admin_data:
+  agendamento_data:
+  atendimento_data:
+
+networks:
+  clinica-network:
+    driver: bridge

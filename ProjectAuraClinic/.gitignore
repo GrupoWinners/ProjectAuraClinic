@@ -1,0 +1,112 @@
+# ==============================================================================
+# ARQUIVO .GITIGNORE 
+# ==============================================================================
+
+# ==============================================================================
+# 1. Pastas e Arquivos Específicos do Projeto
+# ==============================================================================
+# Ignora a pasta de documentação solicitada (incluindo variações de nome)
+/documentação das etapas/
+/documentacao das etapas/
+/Documentação das Etapas/
+/Documentacao das Etapas/
+
+# ==============================================================================
+# 2. Build e Compilação
+# ==============================================================================
+# Ignora arquivos compilados e diretórios de build
+target/
+build/
+bin/
+out/
+*.class
+*.jar
+*.war
+*.ear
+
+# ==============================================================================
+# 3. Maven
+# ==============================================================================
+# Ignora arquivos temporários e logs do Maven
+.mvn/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# ==============================================================================
+# 4. Gradle
+# ==============================================================================
+# Ignora caches e arquivos gerados pelo Gradle
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# ==============================================================================
+# 5. IDEs e Editores de Código
+# ==============================================================================
+
+# -> IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# -> Eclipse
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+
+# -> Visual Studio Code
+.vscode/
+*.code-workspace
+
+# ==============================================================================
+# 6. Sistema Operacional
+# ==============================================================================
+
+# -> Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# -> macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# -> Linux
+*~
+.directory
+
+# ==============================================================================
+# 7. Logs e Arquivos Temporários
+# ==============================================================================
+# Ignora arquivos de log e arquivos temporários de editores
+*.log
+*.tmp
+*.bak
+*.swp
+
+# ==============================================================================
+# 8. Variáveis de Ambiente e Segredos (MUITO IMPORTANTE)
+# ==============================================================================
+# NUNCA comite arquivos com senhas, chaves de API ou configurações locais!
+.env
+.env.local
+.env.*.local
+application-local.yml
+application-local.properties
+secrets.yml

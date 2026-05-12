@@ -111,4 +111,5 @@ application-local.yml
 application-local.properties
 secrets.yml
 pdf_content.txt
-documentação/Sem título.pdf
+docs/Sem título.pdf
+*.pdf

@@ -110,3 +110,5 @@ Icon
 application-local.yml
 application-local.properties
 secrets.yml
+pdf_content.txt
+documentação/Sem título.pdf

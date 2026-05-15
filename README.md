@@ -161,3 +161,8 @@ docker compose logs -f atendimento-service
 
 # Time de Desenvolvimento
 
+|Nome|Função|
+|---|---|
+|João Vitor|Tech Lead + Desenvolvedor|
+|Samela Maria|DeveOps + Desenvolvedora|
+|atendimento-service|QA + Desenvolvedora|

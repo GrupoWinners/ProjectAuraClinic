@@ -164,5 +164,8 @@ docker compose logs -f atendimento-service
 |Nome|Função|
 |---|---|
 |João Vitor|Tech Lead + Desenvolvedor|
-|Samela|DeveOps + Desenvolvedora|
+|Samela|DevOps + Desenvolvedora|
 |Nadiny|QA + Desenvolvedora|
+
+# Contribuidores
+- Maycon Fidelis 

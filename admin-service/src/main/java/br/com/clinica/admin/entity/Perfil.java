@@ -4,27 +4,26 @@ import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
 
-// Entidade que representa uma especialidade médica disponível na clínica (ex: Cardiologia, Neurologia).
-// Utilizada no vínculo com o médico e como base para relatórios por especialidade.
+// Entidade que representa um perfil de acesso (RBAC) no sistema.
+// Valores possíveis: ADM, MEDICO, SECRETARIA — conforme definição dos atores UML.
 @Entity
-@Table(name = "especialidades")
+@Table(name = "perfis")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Especialidade {
+public class Perfil {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "descricao", nullable = false, length = 100, unique = true)
-    private String descricao;
+    @Column(nullable = false, unique = true, length = 50)
+    private String nome;
 
-    @Builder.Default
-    @Column(name = "ativo", nullable = false)
-    private Boolean ativo = true;
+    @Column(length = 200)
+    private String descricao;
 
     @Builder.Default
     @Column(name = "criado_em", nullable = false, updatable = false)

@@ -1,19 +1,22 @@
 package br.com.clinica.agendamento.service;
 
-import br.com.clinica.agendamento.client.dto.AdminClient;
-import br.com.clinica.agendamento.client.dto.ConvenioResponse;
-import br.com.clinica.agendamento.dto.CancelamentoRequest;
-import br.com.clinica.agendamento.dto.ConsultaRequest;
 import br.com.clinica.agendamento.entity.Cancelamento;
 import br.com.clinica.agendamento.entity.Consulta;
 import br.com.clinica.agendamento.entity.StatusConsulta;
+import br.com.clinica.agendamento.entity.TipoConsulta;
 import br.com.clinica.agendamento.repository.CancelamentoRepository;
 import br.com.clinica.agendamento.repository.ConsultaRepository;
+import br.com.clinica.agendamento.dto.ConsultaRequest;
+import br.com.clinica.agendamento.dto.CancelamentoRequest;
+
+import br.com.clinica.commons.exception.RegraDeNegocioException;
+import br.com.clinica.commons.exception.RecursoNaoEncontradoException;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -21,93 +24,80 @@ public class AgendamentoService {
 
     private final ConsultaRepository consultaRepository;
     private final CancelamentoRepository cancelamentoRepository;
-    private final AdminClient adminClient;
 
     @Transactional
     public Consulta agendarConsulta(ConsultaRequest request) {
-        try {
-            ConvenioResponse convenio = adminClient.buscarConvenioPorId(request.getConvenioId());
-            if (convenio == null || !convenio.isAtivo()) {
-                throw new RuntimeException("Não é possível agendar: O convênio informado não está ativo.");
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao validar convênio no sistema de administração: " + e.getMessage());
+        boolean horarioOcupado = consultaRepository.existsByMedicoIdAndDataHoraAndStatusNot(
+                request.getMedicoId(),
+                request.getDataHora(),
+                StatusConsulta.CANCELADA
+        );
+
+        if (horarioOcupado) {
+            throw new RegraDeNegocioException("O médico já possui uma consulta agendada para este horário.");
         }
 
-        boolean medicoOcupado = consultaRepository.existsByMedicoIdAndDataHoraAndStatusNot(
-                request.getMedicoId(), request.getDataHora(), StatusConsulta.CANCELADA);
-        if (medicoOcupado) {
-            throw new RuntimeException("Conflito de horário: O médico já possui uma consulta agendada neste momento.");
-        }
-
-        boolean pacienteOcupado = consultaRepository.existsByPacienteIdAndDataHoraAndStatusNot(
-                request.getPacienteId(), request.getDataHora(), StatusConsulta.CANCELADA);
-        if (pacienteOcupado) {
-            throw new RuntimeException("Conflito de horário: O paciente já possui uma consulta agendada neste momento.");
-        }
-
-        Consulta consulta = Consulta.builder()
-                .pacienteId(request.getPacienteId())
-                .medicoId(request.getMedicoId())
-                .dataHora(request.getDataHora())
-                .status(StatusConsulta.AGENDADA)
-                .build();
+        Consulta consulta = new Consulta();
+        consulta.setPacienteId(request.getPacienteId());
+        consulta.setMedicoId(request.getMedicoId());
+        consulta.setDataHora(request.getDataHora());
+        consulta.setTipo(TipoConsulta.valueOf(request.getTipo().toUpperCase()));
+        consulta.setStatus(StatusConsulta.AGENDADA);
 
         return consultaRepository.save(consulta);
     }
 
-    // --- REQUISITO: REMARCAR CONSULTA & MÁQUINA DE ESTADOS ---
     @Transactional
-    public Consulta remarcarConsulta(Long id, LocalDateTime novaDataHora) {
-        Consulta consulta = consultaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Consulta não encontrada."));
+    public Consulta remarcarConsulta(Long id, ConsultaRequest request) {
+        Consulta consultaOriginal = consultaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Consulta não encontrada para o ID informado."));
 
-        // Regra da Máquina de Estados: Só pode remarcar se estiver AGENDADA ou REMARCADA
-        if (consulta.getStatus() == StatusConsulta.CANCELADA || consulta.getStatus() == StatusConsulta.CONCLUIDA) {
-            throw new RuntimeException("Não é possível remarcar uma consulta com status: " + consulta.getStatus());
+        if (consultaOriginal.getStatus() == StatusConsulta.CANCELADA) {
+            throw new RegraDeNegocioException("Não é possível remarcar uma consulta que já está cancelada.");
         }
 
-        // Validação de conflito para o novo horário (Médico)
-        boolean medicoOcupado = consultaRepository.existsByMedicoIdAndDataHoraAndStatusNot(
-                consulta.getMedicoId(), novaDataHora, StatusConsulta.CANCELADA);
-        if (medicoOcupado) {
-            throw new RuntimeException("Conflito de horário: O médico já possui uma consulta no novo horário solicitado.");
-        }
+        // Regra de Negócio 10: Altera a original para CANCELADA
+        consultaOriginal.setStatus(StatusConsulta.CANCELADA);
+        consultaRepository.save(consultaOriginal);
 
-        // Atualiza a data e muda o estado para REMARCADA
-        consulta.setDataHora(novaDataHora);
-        consulta.setStatus(StatusConsulta.REMARCADA);
+        // Cria o novo registro imutável
+        Consulta novaConsulta = new Consulta();
+        novaConsulta.setPacienteId(consultaOriginal.getPacienteId());
+        novaConsulta.setMedicoId(consultaOriginal.getMedicoId());
+        novaConsulta.setDataHora(request.getNovaDataHora());
+        novaConsulta.setTipo(consultaOriginal.getTipo());
+        novaConsulta.setStatus(StatusConsulta.REMARCADA);
+        novaConsulta.setConsultaOriginalId(consultaOriginal.getId());
 
-        return consultaRepository.save(consulta);
+        return consultaRepository.save(novaConsulta);
     }
 
-    // --- REQUISITO: CANCELAR CONSULTA COM MOTIVO OBRIGATÓRIO ---
     @Transactional
     public void cancelarConsulta(Long id, CancelamentoRequest request) {
-        // Validação do motivo obrigatório
-        if (request.getMotivo() == null || request.getMotivo().trim().isEmpty()) {
-            throw new RuntimeException("O motivo do cancelamento é obrigatório.");
-        }
-
         Consulta consulta = consultaRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Consulta não encontrada."));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Consulta não encontrada para o ID informado."));
 
-        // Regra da Máquina de Estados: Não se pode cancelar o que já foi cancelado ou concluído
-        if (consulta.getStatus() == StatusConsulta.CANCELADA || consulta.getStatus() == StatusConsulta.CONCLUIDA) {
-            throw new RuntimeException("Esta consulta não pode ser cancelada pois seu status atual é: " + consulta.getStatus());
+        if (consulta.getStatus() == StatusConsulta.CANCELADA) {
+            throw new RegraDeNegocioException("Esta consulta já se encontra cancelada.");
         }
 
-        // Altera o estado da consulta para CANCELADA
         consulta.setStatus(StatusConsulta.CANCELADA);
         consultaRepository.save(consulta);
 
-        // Salva o registro do cancelamento com a justificativa obrigatória
-        Cancelamento cancelamento = Cancelamento.builder()
-                .consulta(consulta)
-                .motivo(request.getMotivo())
-                .dataHoraCancelamento(LocalDateTime.now())
-                .build();
+        Cancelamento cancelamento = new Cancelamento();
+        cancelamento.setConsulta(consulta);
+        cancelamento.setMotivo(request.getMotivo());
+        cancelamento.setCanceladoPor(request.getCanceladoPor());
 
         cancelamentoRepository.save(cancelamento);
+    }
+
+    public List<Consulta> listarConsultas() {
+        return consultaRepository.findAll();
+    }
+
+    public Consulta buscarPorId(Long id) {
+        return consultaRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Consulta não encontrada."));
     }
 }

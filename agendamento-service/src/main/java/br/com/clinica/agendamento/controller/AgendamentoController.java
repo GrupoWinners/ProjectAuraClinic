@@ -1,46 +1,55 @@
 package br.com.clinica.agendamento.controller;
 
-import br.com.clinica.agendamento.dto.CancelamentoRequest;
-import br.com.clinica.agendamento.dto.ConsultaRequest;
 import br.com.clinica.agendamento.entity.Consulta;
 import br.com.clinica.agendamento.service.AgendamentoService;
+import br.com.clinica.agendamento.dto.ConsultaRequest;
+import br.com.clinica.agendamento.dto.CancelamentoRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/agendamentos")
+@RequestMapping("/api/v1/consultas")
 @RequiredArgsConstructor
 public class AgendamentoController {
 
     private final AgendamentoService agendamentoService;
 
-    // Rota para Agendar Consulta
     @PostMapping
-    public ResponseEntity<Consulta> agendar(@RequestBody ConsultaRequest request) {
+    public ResponseEntity<Consulta> agendar(@RequestBody @Valid ConsultaRequest request) {
         Consulta consulta = agendamentoService.agendarConsulta(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(consulta);
     }
 
-    // Rota para Remarcar Consulta
     @PutMapping("/{id}/remarcar")
     public ResponseEntity<Consulta> remarcar(
             @PathVariable Long id,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime novaDataHora) {
-        Consulta consultaUpdated = agendamentoService.remarcarConsulta(id, novaDataHora);
-        return ResponseEntity.ok(consultaUpdated);
+            @RequestBody @Valid ConsultaRequest request) {
+        Consulta novaConsulta = agendamentoService.remarcarConsulta(id, request);
+        return ResponseEntity.ok(novaConsulta);
     }
 
-    // Rota para Cancelar Consulta
-    @PutMapping("/{id}/cancelar")
+    @PostMapping("/{id}/cancelar")
     public ResponseEntity<Void> cancelar(
             @PathVariable Long id,
-            @RequestBody CancelamentoRequest request) {
+            @RequestBody @Valid CancelamentoRequest request) {
         agendamentoService.cancelarConsulta(id, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Consulta>> listarTodas() {
+        List<Consulta> consultas = agendamentoService.listarConsultas();
+        return ResponseEntity.ok(consultas);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Consulta> buscarPorId(@PathVariable Long id) {
+        Consulta consulta = agendamentoService.buscarPorId(id);
+        return ResponseEntity.ok(consulta);
     }
 }

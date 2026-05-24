@@ -1,23 +1,30 @@
 package br.com.clinica.agendamento.service;
 
-import br.com.clinica.agendamento.client.dto.AdminClient;
-import br.com.clinica.agendamento.client.dto.ConvenioResponse;
+import br.com.clinica.agendamento.dto.CancelamentoRequest;
 import br.com.clinica.agendamento.dto.ConsultaRequest;
+import br.com.clinica.agendamento.entity.Cancelamento;
 import br.com.clinica.agendamento.entity.Consulta;
 import br.com.clinica.agendamento.entity.StatusConsulta;
+import br.com.clinica.agendamento.entity.TipoConsulta;
 import br.com.clinica.agendamento.repository.CancelamentoRepository;
 import br.com.clinica.agendamento.repository.ConsultaRepository;
+import br.com.clinica.commons.exception.RecursoNaoEncontradoException;
+import br.com.clinica.commons.exception.RegraDeNegocioException;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 class AgendamentoServiceTest {
@@ -28,63 +35,104 @@ class AgendamentoServiceTest {
     @Mock
     private CancelamentoRepository cancelamentoRepository;
 
-    @Mock
-    private AdminClient adminClient;
-
     @InjectMocks
     private AgendamentoService agendamentoService;
 
+    private Consulta consultaPadrao;
+    private LocalDateTime dataFutura;
+
+    @BeforeEach
+    void setUp() {
+        dataFutura = LocalDateTime.now().plusDays(2);
+        consultaPadrao = new Consulta();
+        consultaPadrao.setId(1L);
+        consultaPadrao.setPacienteId(10L);
+        consultaPadrao.setMedicoId(20L);
+        consultaPadrao.setDataHora(dataFutura);
+        consultaPadrao.setStatus(StatusConsulta.AGENDADA);
+        consultaPadrao.setTipo(TipoConsulta.MEDICA);
+    }
+
     @Test
-    @DisplayName("Deve agendar consulta com sucesso quando dados forem válidos")
-    void agendarConsultaCenárioSucesso() {
-        // Arrange
-        LocalDateTime dataHora = LocalDateTime.now().plusDays(1);
-        ConsultaRequest request = new ConsultaRequest(1L, 2L, 10L, dataHora);
-        ConvenioResponse convenioAtivo = new ConvenioResponse(10L, "Plano Plus", true);
+    @DisplayName("Deve agendar uma consulta com sucesso quando o horário estiver livre")
+    void deveAgendarConsultaComSucesso() {
+        ConsultaRequest request = new ConsultaRequest(10L, 20L, dataFutura, "MEDICA", null);
 
-        when(adminClient.buscarConvenioPorId(10L)).thenReturn(convenioAtivo);
-        when(consultaRepository.existsByMedicoIdAndDataHoraAndStatusNot(2L, dataHora, StatusConsulta.CANCELADA)).thenReturn(false);
-        when(consultaRepository.existsByPacienteIdAndDataHoraAndStatusNot(1L, dataHora, StatusConsulta.CANCELADA)).thenReturn(false);
+        Mockito.when(consultaRepository.existsByMedicoIdAndDataHoraAndStatusNot(
+                20L, dataFutura, StatusConsulta.CANCELADA)).thenReturn(false);
 
-        Consulta consultaSalva = Consulta.builder().id(100L).pacienteId(1L).medicoId(2L).dataHora(dataHora).status(StatusConsulta.AGENDADA).build();
-        when(consultaRepository.save(any(Consulta.class))).thenReturn(consultaSalva);
+        Mockito.when(consultaRepository.save(any(Consulta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Act
         Consulta resultado = agendamentoService.agendarConsulta(request);
 
-        // Assert
         assertNotNull(resultado);
         assertEquals(StatusConsulta.AGENDADA, resultado.getStatus());
-        verify(consultaRepository, times(1)).save(any(Consulta.class));
+        assertEquals(TipoConsulta.MEDICA, resultado.getTipo());
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando o convênio não estiver ativo")
-    void agendarConsultaConvenioInativo() {
-        // Arrange
-        ConsultaRequest request = new ConsultaRequest(1L, 2L, 10L, LocalDateTime.now());
-        ConvenioResponse convenioInativo = new ConvenioResponse(10L, "Plano Antigo", false);
+    @DisplayName("Deve lançar exceção ao agendar consulta se o médico já tiver horário ocupado")
+    void deveLancarExcecaoQuandoHorarioOcupado() {
+        ConsultaRequest request = new ConsultaRequest(10L, 20L, dataFutura, "MEDICA", null);
 
-        when(adminClient.buscarConvenioPorId(10L)).thenReturn(convenioInativo);
+        Mockito.when(consultaRepository.existsByMedicoIdAndDataHoraAndStatusNot(
+                20L, dataFutura, StatusConsulta.CANCELADA)).thenReturn(true);
 
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> agendamentoService.agendarConsulta(request));
-        assertTrue(exception.getMessage().contains("O convênio informado não está ativo"));
+        assertThrows(RegraDeNegocioException.class, () -> agendamentoService.agendarConsulta(request));
     }
 
     @Test
-    @DisplayName("Deve lançar exceção quando houver conflito de horário para o médico")
-    void agendarConsultaConflitoMedico() {
-        // Arrange
-        LocalDateTime dataHora = LocalDateTime.now().plusDays(1);
-        ConsultaRequest request = new ConsultaRequest(1L, 2L, 10L, dataHora);
-        ConvenioResponse convenioAtivo = new ConvenioResponse(10L, "Plano Plus", true);
+    @DisplayName("Regra 10: Deve remarcar consulta com sucesso alterando a original para CANCELADA e criando uma nova")
+    void deveRemarcarConsultaComSucesso() {
+        LocalDateTime novaData = dataFutura.plusDays(1);
+        ConsultaRequest request = new ConsultaRequest(null, null, null, null, novaData);
 
-        when(adminClient.buscarConvenioPorId(10L)).thenReturn(convenioAtivo);
-        when(consultaRepository.existsByMedicoIdAndDataHoraAndStatusNot(2L, dataHora, StatusConsulta.CANCELADA)).thenReturn(true);
+        Mockito.when(consultaRepository.findById(1L)).thenReturn(Optional.of(consultaPadrao));
+        Mockito.when(consultaRepository.save(any(Consulta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> agendamentoService.agendarConsulta(request));
-        assertTrue(exception.getMessage().contains("O médico já possui uma consulta agendada"));
+        Consulta novaConsulta = agendamentoService.remarcarConsulta(1L, request);
+
+        // Valida que a consulta original foi cancelada (Imutabilidade da linha)
+        assertEquals(StatusConsulta.CANCELADA, consultaPadrao.getStatus());
+
+        // Valida os dados da nova linha gerada no banco de dados
+        assertNotNull(novaConsulta);
+        assertEquals(StatusConsulta.REMARCADA, novaConsulta.getStatus());
+        assertEquals(novaData, novaConsulta.getDataHora());
+        assertEquals(1L, novaConsulta.getConsultaOriginalId()); // Vínculo ID
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao tentar remarcar uma consulta que já está cancelada")
+    void deveLancarExcecaoAoRemarcarConsultaJaCancelada() {
+        consultaPadrao.setStatus(StatusConsulta.CANCELADA);
+        ConsultaRequest request = new ConsultaRequest(null, null, null, null, dataFutura);
+
+        Mockito.when(consultaRepository.findById(1L)).thenReturn(Optional.of(consultaPadrao));
+
+        assertThrows(RegraDeNegocioException.class, () -> agendamentoService.remarcarConsulta(1L, request));
+    }
+
+    @Test
+    @DisplayName("Deve cancelar uma consulta ativa com sucesso registrando o motivo e autor")
+    void deveCancelarConsultaComSucesso() {
+        CancelamentoRequest request = new CancelamentoRequest("Paciente desistiu", "PACIENTE");
+
+        Mockito.when(consultaRepository.findById(1L)).thenReturn(Optional.of(consultaPadrao));
+
+        agendamentoService.cancelarConsulta(1L, request);
+
+        assertEquals(StatusConsulta.CANCELADA, consultaPadrao.getStatus());
+        Mockito.verify(cancelamentoRepository, Mockito.times(1)).save(any(Cancelamento.class));
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao tentar cancelar consulta inexistente")
+    void deveLancarExcecaoAoCancelarInexistente() {
+        CancelamentoRequest request = new CancelamentoRequest("Motivo", "MEDICO");
+
+        Mockito.when(consultaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(RecursoNaoEncontradoException.class, () -> agendamentoService.cancelarConsulta(99L, request));
     }
 }

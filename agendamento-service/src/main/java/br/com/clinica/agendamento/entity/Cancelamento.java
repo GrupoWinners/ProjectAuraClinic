@@ -1,16 +1,18 @@
 package br.com.clinica.agendamento.entity;
 
-import lombok.*;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "tb_cancelamentos")
+@Table(name = "cancelamentos") // Ajustado de tb_cancelamentos para cancelamentos conforme o DDL
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Cancelamento {
 
     @Id
@@ -18,12 +20,20 @@ public class Cancelamento {
     private Long id;
 
     @OneToOne
-    @JoinColumn(name = "consulta_id", nullable = false, unique = true)
-    private Consulta consulta;
+    @JoinColumn(name = "consulta_id", nullable = false)
+    private Consulta consulta; // Vínculo com a consulta que foi cancelada
 
-    @Column(name = "motivo", nullable = false, length = 500)
-    private String motivo;
+    @Column(nullable = false)
+    private String motivo; // O motivo que o revisor relembrou ser obrigatório
 
-    @Column(name = "data_hora_cancelamento", nullable = false)
-    private LocalDateTime dataHoraCancelamento;
+    @Column(name = "cancelado_por", nullable = false)
+    private String canceladoPor; // Adicionado conforme solicitação do revisor (ex: PACIENTE, MEDICO)
+
+    @Column(name = "data_cancelamento", nullable = false)
+    private LocalDateTime dataCancelamento;
+
+    @PrePersist
+    protected void onCreate() {
+        this.dataCancelamento = LocalDateTime.now();
+    }
 }

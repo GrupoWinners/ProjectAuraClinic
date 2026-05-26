@@ -61,10 +61,12 @@ class AgendamentoServiceTest {
     @Test
     @DisplayName("Deve agendar uma consulta com sucesso ao validar clientes externos ativos e horários livres")
     void deveAgendarConsultaComSucesso() {
-        ConsultaRequisicao requisicao = new ConsultaRequisicao(10L, 20L, dataFutura, "MEDICA", null);
+        ConsultaRequisicao requisicao = new ConsultaRequisicao(10L, 20L, dataFutura, "MEDICA", null, 30L);
 
         Mockito.when(adminServiceClient.validarPacienteAtivo(10L)).thenReturn(true);
         Mockito.when(adminServiceClient.validarMedicoAtivo(20L)).thenReturn(true);
+        Mockito.when(adminServiceClient.validarConvenioAtivo(30L)).thenReturn(true);
+
         Mockito.when(consultaRepository.existsByMedicoIdAndDataHoraAndStatusNot(20L, dataFutura, StatusConsulta.CANCELADA)).thenReturn(false);
         Mockito.when(consultaRepository.existsByPacienteIdAndDataHoraAndStatusNot(10L, dataFutura, StatusConsulta.CANCELADA)).thenReturn(false);
         Mockito.when(consultaRepository.save(any(Consulta.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -78,9 +80,21 @@ class AgendamentoServiceTest {
     @Test
     @DisplayName("Deve lançar exceção se o paciente não estiver ativo no microsserviço admin")
     void deveLancarExcecaoQuandoPacienteInativo() {
-        ConsultaRequisicao requisicao = new ConsultaRequisicao(10L, 20L, dataFutura, "MEDICA", null);
+        ConsultaRequisicao requisicao = new ConsultaRequisicao(10L, 20L, dataFutura, "MEDICA", null, null);
 
         Mockito.when(adminServiceClient.validarPacienteAtivo(10L)).thenReturn(false);
+
+        assertThrows(RegraDeNegocioException.class, () -> agendamentoService.agendarConsulta(requisicao));
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção se o convênio informado estiver inativo no microsserviço admin")
+    void deveLancarExcecaoQuandoConvenioInativo() {
+        ConsultaRequisicao requisicao = new ConsultaRequisicao(10L, 20L, dataFutura, "MEDICA", null, 30L);
+
+        Mockito.when(adminServiceClient.validarPacienteAtivo(10L)).thenReturn(true);
+        Mockito.when(adminServiceClient.validarMedicoAtivo(20L)).thenReturn(true);
+        Mockito.when(adminServiceClient.validarConvenioAtivo(30L)).thenReturn(false);
 
         assertThrows(RegraDeNegocioException.class, () -> agendamentoService.agendarConsulta(requisicao));
     }
@@ -89,7 +103,7 @@ class AgendamentoServiceTest {
     @DisplayName("Deve remarcar consulta com sucesso aplicando as regras de validação de horário na nova data")
     void deveRemarcarConsultaComSucesso() {
         LocalDateTime novaData = dataFutura.plusDays(1);
-        ConsultaRequisicao requisicao = new ConsultaRequisicao(null, null, null, null, novaData);
+        ConsultaRequisicao requisicao = new ConsultaRequisicao(null, null, null, null, novaData, null);
 
         Mockito.when(consultaRepository.findById(1L)).thenReturn(Optional.of(consultaPadrao));
         Mockito.when(consultaRepository.existsByMedicoIdAndDataHoraAndStatusNot(20L, novaData, StatusConsulta.CANCELADA)).thenReturn(false);

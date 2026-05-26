@@ -26,4 +26,6 @@ public class ConsultaRequisicao {
     private String tipo;
 
     private LocalDateTime novaDataHora;
+
+    private Long convenioId;
 }

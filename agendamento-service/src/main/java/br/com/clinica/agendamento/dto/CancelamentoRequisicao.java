@@ -15,6 +15,6 @@ public class CancelamentoRequisicao {
     @NotBlank(message = "O motivo do cancelamento é obrigatório")
     private String motivo;
 
-    @NotBlank(message = "O autor do cancelamento é obrigatório")
+    @NotBlank(message = "É necessário informar quem solicitou o cancelamento")
     private String canceladoPor;
 }

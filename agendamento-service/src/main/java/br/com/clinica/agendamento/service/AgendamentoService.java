@@ -42,6 +42,13 @@ public class AgendamentoService {
             throw new RegraDeNegocioException("O médico informado não está ativo no sistema.");
         }
 
+        if (requisicao.getConvenioId() != null) {
+            Boolean convenioAtivo = adminServiceClient.validarConvenioAtivo(requisicao.getConvenioId());
+            if (convenioAtivo == null || !convenioAtivo) {
+                throw new RegraDeNegocioException("O convênio informado não está ativo no sistema.");
+            }
+        }
+
         boolean medicoOcupado = consultaRepository.existsByMedicoIdAndDataHoraAndStatusNot(
                 requisicao.getMedicoId(),
                 requisicao.getDataHora(),

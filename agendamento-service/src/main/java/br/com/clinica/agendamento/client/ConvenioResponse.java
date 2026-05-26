@@ -1,4 +1,4 @@
-package br.com.clinica.agendamento.client.dto;
+package br.com.clinica.agendamento.client;
 
 import lombok.*;
 

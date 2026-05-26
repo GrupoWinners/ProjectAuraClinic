@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ConsultaRequest {
+public class ConsultaRequisicao {
 
     @NotNull(message = "O ID do paciente é obrigatório")
     private Long pacienteId;
@@ -23,8 +23,7 @@ public class ConsultaRequest {
     private LocalDateTime dataHora;
 
     @NotNull(message = "O tipo de consulta é obrigatório")
-    private String tipo; // Adicionado para o Enum TipoConsulta
+    private String tipo;
 
-    // Campo auxiliar para aproveitar o DTO no fluxo de remarcação
     private LocalDateTime novaDataHora;
 }

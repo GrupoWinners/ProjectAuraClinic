@@ -10,11 +10,11 @@ import lombok.AllArgsConstructor;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class CancelamentoRequest {
+public class CancelamentoRequisicao {
 
     @NotBlank(message = "O motivo do cancelamento é obrigatório")
     private String motivo;
 
     @NotBlank(message = "O autor do cancelamento é obrigatório")
-    private String canceladoPor; // Adicionado para salvar localmente no banco
+    private String canceladoPor;
 }

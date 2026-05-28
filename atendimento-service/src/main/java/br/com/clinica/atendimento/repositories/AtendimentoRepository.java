@@ -1,6 +1,6 @@
 package br.com.clinica.atendimento.repositories;
 
-import br.com.clinica.atendimento.entities.Atendimento;
+import br.com.clinica.atendimento.entity.Atendimento;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

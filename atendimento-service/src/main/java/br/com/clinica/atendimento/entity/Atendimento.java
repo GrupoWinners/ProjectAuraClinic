@@ -1,4 +1,4 @@
-package br.com.clinica.atendimento.entities;
+package br.com.clinica.atendimento.entity;
 
 import br.com.clinica.atendimento.enums.NivelUrgencia;
 import jakarta.persistence.*;

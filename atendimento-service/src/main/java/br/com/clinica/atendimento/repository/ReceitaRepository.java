@@ -1,4 +1,4 @@
-package br.com.clinica.atendimento.repositories;
+package br.com.clinica.atendimento.repository;
 
 import br.com.clinica.atendimento.entity.Receita;
 import org.springframework.data.jpa.repository.JpaRepository;

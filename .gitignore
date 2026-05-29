@@ -15,15 +15,22 @@
 # 2. Build e Compilação
 # ==============================================================================
 # Ignora arquivos compilados e diretórios de build
-target/
-build/
-bin/
-out/
-*.class
-*.jar
-*.war
-*.ear
+**/target/
+**/.mvn/
+**/.idea/
+**/.settings/
+**/.classpath
+**/.project
+**/*.iml
+.git/
+.gitignore
 
+# arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
 # ==============================================================================
 # 3. Maven
 # ==============================================================================

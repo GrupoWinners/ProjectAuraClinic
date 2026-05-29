@@ -1,6 +1,6 @@
-package br.com.clinica.atendimento.repositories;
+package br.com.clinica.atendimento.repository;
 
-import br.com.clinica.atendimento.entities.SolicitacaoExame;
+import br.com.clinica.atendimento.entity.SolicitacaoExame;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

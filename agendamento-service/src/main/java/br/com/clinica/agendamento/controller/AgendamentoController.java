@@ -27,7 +27,7 @@ public class AgendamentoController {
 
     @PutMapping("/{id}/remarcar")
     public ResponseEntity<ConsultaResposta> remarcar(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody @Valid ConsultaRequisicao requisicao) {
         ConsultaResposta resposta = agendamentoService.remarcarConsulta(id, requisicao);
         return ResponseEntity.ok(resposta);
@@ -35,7 +35,7 @@ public class AgendamentoController {
 
     @PutMapping("/{id}/cancelar")
     public ResponseEntity<Void> cancelar(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestBody @Valid CancelamentoRequisicao requisicao) {
         agendamentoService.cancelarConsulta(id, requisicao);
         return ResponseEntity.noContent().build();
@@ -48,7 +48,7 @@ public class AgendamentoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ConsultaResposta> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<ConsultaResposta> buscarPorId(@PathVariable("id") Long id) {
         ConsultaResposta resposta = agendamentoService.buscarPorId(id);
         return ResponseEntity.ok(resposta);
     }

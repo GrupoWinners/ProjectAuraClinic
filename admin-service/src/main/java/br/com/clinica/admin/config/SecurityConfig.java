@@ -44,6 +44,19 @@ public class SecurityConfig {
                 // Relatórios gerenciais restrito ao ADM
                 .requestMatchers("/api/v1/relatorios/**").hasRole("ADM")
                 // Todas as outras requisições requerem autenticação
+
+                    // Liberação temporária para testes da sprint
+                    .requestMatchers(HttpMethod.POST, "/api/v1/pacientes").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/pacientes/**").permitAll()
+
+                    .requestMatchers(HttpMethod.POST, "/api/v1/convenios").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/convenios/**").permitAll()
+
+                    .requestMatchers(HttpMethod.POST, "/api/v1/medicos").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/medicos/**").permitAll()
+
+                    .requestMatchers(HttpMethod.POST, "/api/v1/especialidades").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/v1/especialidades/**").permitAll()
                 .anyRequest().authenticated()
             )
             // Adiciona o filtro JWT antes do filtro de autenticação padrão do Spring

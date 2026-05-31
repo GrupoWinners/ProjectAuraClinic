@@ -160,8 +160,8 @@ public class AtendimentoService {
             throw new RegraDeNegocioException("Médico informado não corresponde ao médico da consulta");
         }
 
-        if (!"EM_ATENDIMENTO".equals(consulta.getStatus())) {
-            throw new RegraDeNegocioException("Consulta precisa estar com status EM_ATENDIMENTO para registrar atendimento");
+        if (!"AGENDADA".equals(consulta.getStatus())) {
+            throw new RegraDeNegocioException("Consulta precisa estar com status AGENDADA para registrar atendimento");
         }
     }
 }

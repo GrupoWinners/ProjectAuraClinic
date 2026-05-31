@@ -12,7 +12,7 @@ RUN mvn -pl agendamento-service -am clean package -DskipTests
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-COPY --from=build /app/agendamento-service/target/*.jar app.jar
+COPY --from=build /app/agendamento-service/target/agendamento-service-1.0.0.jar app.jar
 
 EXPOSE 8082
 

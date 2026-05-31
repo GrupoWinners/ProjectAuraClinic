@@ -4,7 +4,9 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "admin-service", path = "/api/v1")
+@FeignClient(
+        name = "admin-service",
+        url = "${servicos.admin-service.url}")
 public interface AdminServiceClient {
 
     @GetMapping("/pacientes/{id}/validar-ativo")

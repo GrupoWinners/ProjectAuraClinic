@@ -1,12 +1,12 @@
 server:
-port: 8083
+  port: ${SERVER_PORT:8083}
 
 spring:
   application:
     name: atendimento-service
 
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/atendimento_db
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3308}/atendimento_db
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -19,11 +19,26 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connect-timeout: 5000
+            read-timeout: 10000
+            logger-level: FULL
+
 springdoc:
   api-docs:
     path: /api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+servicos:
+  admin-service:
+    url: ${ADMIN_SERVICE_URL:http://localhost:8081}
+  agendamento-service:
+    url: ${AGENDAMENTO_SERVICE_URL:http://localhost:8082}
 
 logbook:
   filter:

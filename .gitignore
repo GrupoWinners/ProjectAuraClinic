@@ -15,15 +15,22 @@
 # 2. Build e Compilação
 # ==============================================================================
 # Ignora arquivos compilados e diretórios de build
-target/
-build/
-bin/
-out/
-*.class
-*.jar
-*.war
-*.ear
+**/target/
+**/.mvn/
+**/.idea/
+**/.settings/
+**/.classpath
+**/.project
+**/*.iml
+.git/
+.gitignore
 
+# arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
 # ==============================================================================
 # 3. Maven
 # ==============================================================================
@@ -113,3 +120,36 @@ secrets.yml
 pdf_content.txt
 docs/Sem título.pdf
 *.pdf
+
+# ==============================================================================
+# 9. Spring Boot — Configurações com Segredos
+# ==============================================================================
+# application-dev.yml contém JWT secret hardcoded e credenciais locais de banco
+# Cada desenvolvedor deve criar o seu próprio a partir do application-dev.yml.example
+application-dev.yml
+
+# application-prod.yml referencia variáveis de ambiente sensíveis — não commitado
+# para evitar exposição acidental de nomes de variáveis e estrutura de produção
+application-prod.yml
+
+# Arquivos de override local nunca devem ir para o repositório
+application-override.yml
+application-*.local.yml
+
+# ==============================================================================
+# 10. Docker e Infraestrutura
+# ==============================================================================
+# Arquivos docker com credenciais embutidas
+docker-compose.override.yml
+.docker/
+*.env
+
+# ==============================================================================
+# 11. Relatórios e Arquivos Gerados por Ferramentas
+# ==============================================================================
+*.log
+*.tmp
+*.bak
+*.swp
+# Pasta target do Maven (build artifacts)
+**/target/
